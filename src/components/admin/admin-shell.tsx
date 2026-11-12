@@ -34,7 +34,17 @@ import { cn } from "@/lib/utils";
 import { NotificationsBell } from "./notifications-bell";
 import { useAdmin } from "./use-admin";
 
-type NavItem = { to: string; label: string; icon: LucideIcon; exact?: boolean; contentOnly?: boolean };
+type AdminPath =
+  | "/admin"
+  | "/admin/enquiries"
+  | "/admin/content"
+  | "/admin/services"
+  | "/admin/portfolio"
+  | "/admin/testimonials"
+  | "/admin/faqs"
+  | "/admin/team"
+  | "/admin/profile";
+type NavItem = { to: AdminPath; label: string; icon: LucideIcon; exact?: boolean; contentOnly?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
 
 const NAV: NavGroup[] = [
