@@ -28,3 +28,11 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+- Public pages read content only through `src/lib/content.functions.ts` server functions using the anon publishable client (`public-db.server.ts`); RLS decides what is public. Why: keeps SSR reads safe and avoids exposing admin data.
+- Public portfolio lives in `portfolio_items`; internal project management (budgets, notes) must use separate tables. Why: column-level privacy can't be enforced on an anon-readable table.
+- Editable site copy lives in `website_content` (key → jsonb) so the future CMS can change it without code. Why: brief requires no-code content management.
+- Staff permissions use `user_roles` + `has_role`/`is_staff`/`is_admin` SQL functions. Why: roles must never live on profiles or client storage.
+- New enquiries create a notification + activity log via DB trigger. Why: admin is notified regardless of which code path inserts.
+- Dark-first design; `.surface-light` re-themes a section to the light palette. All colors are tokens in `src/styles.css`.

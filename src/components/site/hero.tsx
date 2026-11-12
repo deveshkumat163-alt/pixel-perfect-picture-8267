@@ -88,7 +88,7 @@ function FloatingStack() {
 export function Hero({ hero }: { hero: SiteContent["home_hero"] }) {
   const words = hero.headline.split(" ");
   return (
-    <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28">
+    <section className="relative overflow-hidden pt-32 pb-8 md:pt-40 md:pb-12">
       <HeroBackground />
       <div className="container-page relative grid items-center gap-14 lg:grid-cols-[1.15fr_1fr]">
         <div>
