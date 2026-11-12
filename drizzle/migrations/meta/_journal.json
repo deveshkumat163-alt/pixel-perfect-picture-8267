@@ -15,6 +15,13 @@
       "when": 1794501631811,
       "tag": "0001_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794502447243,
+      "tag": "0002_profiles_audit_storage",
+      "breakpoints": true
     }
   ]
 }
