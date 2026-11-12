@@ -45,12 +45,21 @@ function ResetPasswordPage() {
     const fd = new FormData(e.currentTarget);
     const password = String(fd.get("password") ?? "");
     const confirm = String(fd.get("confirm") ?? "");
-    if (password.length < 8) return toast.error("Use at least 8 characters");
-    if (password !== confirm) return toast.error("Passwords don't match");
+    if (password.length < 8) {
+      toast.error("Use at least 8 characters");
+      return;
+    }
+    if (password !== confirm) {
+      toast.error("Passwords don't match");
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Password updated");
     navigate({ to: "/admin", replace: true });
   }
