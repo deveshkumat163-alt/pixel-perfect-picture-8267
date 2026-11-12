@@ -49,7 +49,9 @@ function useDashboard() {
         portfolio: portfolio.count ?? 0,
         services: services.count ?? 0,
         testimonials: testimonials.count ?? 0,
-        activity: (activity.data ?? []).map((a) => ({ ...a, actor: a.actor_id ? names[a.actor_id] ?? "Team member" : "Website visitor" })),
+        activity: (activity.data ?? []).map((a) => ({ ...a, actor: a.actor_id
+          ? names[a.actor_id] ?? "Team member"
+          : ((a.details as Record<string, string> | null)?.["name"] ?? "Website visitor") })),
       };
     },
   });
@@ -72,6 +74,10 @@ function Stat({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: str
 }
 
 function describeActivity(a: { action: string; entity_type: string; details: unknown }) {
+  if (a.action === "enquiry.created") {
+    const svc = (a.details as Record<string, string> | null)?.["service"];
+    return `sent a new enquiry${svc ? ` about ${svc}` : ""}`;
+  }
   const [, op = ""] = a.action.split(".");
   const d = (a.details ?? {}) as Record<string, string>;
   const entity = a.entity_type.replace(/_/g, " ").replace(/s$/, "").replace("portfolio item", "project");
