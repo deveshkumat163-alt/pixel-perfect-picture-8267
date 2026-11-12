@@ -34,16 +34,7 @@ import { cn } from "@/lib/utils";
 import { NotificationsBell } from "./notifications-bell";
 import { useAdmin } from "./use-admin";
 
-type AdminPath =
-  | "/admin"
-  | "/admin/enquiries"
-  | "/admin/content"
-  | "/admin/services"
-  | "/admin/portfolio"
-  | "/admin/testimonials"
-  | "/admin/faqs"
-  | "/admin/team"
-  | "/admin/profile";
+type AdminPath = "/admin" | "/admin/enquiries";
 type NavItem = { to: AdminPath; label: string; icon: LucideIcon; exact?: boolean; contentOnly?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -53,23 +44,6 @@ const NAV: NavGroup[] = [
     items: [
       { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
       { to: "/admin/enquiries", label: "Enquiries", icon: Inbox },
-    ],
-  },
-  {
-    label: "Website",
-    items: [
-      { to: "/admin/content", label: "Site content", icon: FileText, contentOnly: true },
-      { to: "/admin/services", label: "Services", icon: Sparkles, contentOnly: true },
-      { to: "/admin/portfolio", label: "Portfolio", icon: BriefcaseBusiness, contentOnly: true },
-      { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote, contentOnly: true },
-      { to: "/admin/faqs", label: "FAQs", icon: HelpCircle, contentOnly: true },
-    ],
-  },
-  {
-    label: "Organisation",
-    items: [
-      { to: "/admin/team", label: "Team & roles", icon: Users },
-      { to: "/admin/profile", label: "My profile", icon: UserRound },
     ],
   },
 ];
@@ -200,11 +174,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel className="truncate font-normal text-muted-foreground">{user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/admin/profile">
-                  <UserRound /> My profile
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={signOut}>
                 <LogOut /> Sign out
               </DropdownMenuItem>

@@ -177,7 +177,7 @@ export function ListEditor({
                   onChange={(v) => update(i, f.name, v)}
                   multiline={!!f.multiline}
                   rows={2}
-                  className={f.multiline ? "md:col-span-2" : undefined}
+                  {...(f.multiline ? { className: "md:col-span-2" } : {})}
                 />
               ),
             )}
