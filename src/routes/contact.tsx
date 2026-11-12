@@ -38,7 +38,8 @@ export const Route = createFileRoute("/contact")({
   component: ContactPage,
 });
 
-type FieldErrors = Partial<Record<string, string>>;
+type FieldKey = "name" | "email" | "phone" | "company" | "service_interest" | "budget_range" | "message" | "website";
+type FieldErrors = { [K in FieldKey]?: string | undefined };
 
 function digits(v: string) {
   return v.replace(/[^0-9]/g, "");
@@ -51,10 +52,10 @@ function ContactPage() {
   const send = useServerFn(submitEnquiry);
 
   const serviceOptions = [...services.map((s) => s.title), "Other / Not sure"];
-  const [service, setService] = useState<string | undefined>(
-    preselected && serviceOptions.includes(preselected) ? preselected : undefined,
+  const [service, setService] = useState<string>(
+    preselected && serviceOptions.includes(preselected) ? preselected : "",
   );
-  const [budget, setBudget] = useState<string | undefined>();
+  const [budget, setBudget] = useState<string>("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -71,15 +72,15 @@ function ContactPage() {
       email: String(fd.get("email") ?? ""),
       phone: String(fd.get("phone") ?? ""),
       company: String(fd.get("company") ?? ""),
-      service_interest: service ?? "",
-      budget_range: budget ?? "",
+      service_interest: service,
+      budget_range: budget,
       message: String(fd.get("message") ?? ""),
       website: String(fd.get("website") ?? ""),
     };
     const parsed = enquirySchema.safeParse(payload);
     if (!parsed.success) {
       const errs: FieldErrors = {};
-      for (const issue of parsed.error.issues) errs[String(issue.path[0])] = issue.message;
+      for (const issue of parsed.error.issues) errs[issue.path[0] as FieldKey] = issue.message;
       setErrors(errs);
       return;
     }
@@ -242,7 +243,7 @@ function Field({
 }: {
   label: string;
   name: string;
-  error?: string;
+  error?: string | undefined;
   required?: boolean;
   type?: string;
   autoComplete?: string;
@@ -274,7 +275,7 @@ function ContactRow({
   icon: typeof Mail;
   label: string;
   value: string;
-  href?: string;
+  href?: string | undefined;
 }) {
   const inner = (
     <>
