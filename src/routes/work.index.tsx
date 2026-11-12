@@ -8,11 +8,12 @@ import { PORTFOLIO_CATEGORIES } from "@/lib/content-types";
 import { portfolioQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
-type WorkSearch = { category?: string };
+type WorkSearch = { category?: string | undefined };
 
 export const Route = createFileRoute("/work/")({
   validateSearch: (search: Record<string, unknown>): WorkSearch => {
-    const c = typeof search.category === "string" ? search.category : undefined;
+    const raw = search["category"];
+    const c = typeof raw === "string" ? raw : undefined;
     return { category: c && (PORTFOLIO_CATEGORIES as readonly string[]).includes(c) ? c : undefined };
   },
   head: () => ({

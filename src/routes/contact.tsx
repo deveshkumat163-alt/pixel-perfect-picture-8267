@@ -15,12 +15,13 @@ import { submitEnquiry } from "@/lib/content.functions";
 import { enquirySchema } from "@/lib/enquiry-schema";
 import { servicesQuery, siteContentQuery } from "@/lib/queries";
 
-type ContactSearch = { service?: string };
+type ContactSearch = { service?: string | undefined };
 
 export const Route = createFileRoute("/contact")({
-  validateSearch: (search: Record<string, unknown>): ContactSearch => ({
-    service: typeof search.service === "string" && search.service.length <= 120 ? search.service : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): ContactSearch => {
+    const raw = search["service"];
+    return { service: typeof raw === "string" && raw.length <= 120 ? raw : undefined };
+  },
   head: () => ({
     meta: [
       { title: "Contact — Start a Project | Dev Creative Works" },

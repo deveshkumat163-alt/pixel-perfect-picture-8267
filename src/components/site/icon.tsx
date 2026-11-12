@@ -21,7 +21,7 @@ const ICONS: Record<string, LucideIcon> = {
   Sparkles,
 };
 
-export function DynamicIcon({ name, className }: { name?: string | null; className?: string }) {
+export function DynamicIcon({ name, className }: { name?: string | null | undefined; className?: string | undefined }) {
   const Icon = (name && ICONS[name]) || Sparkles;
   return <Icon className={className} aria-hidden />;
 }
