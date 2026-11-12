@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -16,6 +17,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
 import { servicesQuery, siteContentQuery } from "@/lib/queries";
+import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
   return (
@@ -137,17 +139,37 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+const APP_PREFIXES = ["/admin", "/auth", "/reset-password"];
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isApp = APP_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      router.invalidate();
+      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+    });
+    return () => data.subscription.unsubscribe();
+  }, [router, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SiteHeader />
-      <main className="min-h-screen">
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      {isApp ? (
         <Outlet />
-      </main>
-      <SiteFooter />
+      ) : (
+        <>
+          <SiteHeader />
+          <main className="min-h-screen">
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Outlet />
+          </main>
+          <SiteFooter />
+        </>
+      )}
       <Toaster theme="dark" position="bottom-right" />
     </QueryClientProvider>
   );
