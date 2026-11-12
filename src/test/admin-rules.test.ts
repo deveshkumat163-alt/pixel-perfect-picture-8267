@@ -47,3 +47,30 @@ describe("helpers", () => {
     expect(slugify("Kōhi Coffee Roasters!")).toBe("kohi-coffee-roasters");
   });
 });
+
+import { conversionRate, enquiriesByMonth } from "@/lib/admin/stats";
+
+describe("dashboard figures", () => {
+  it("conversion rate is converted leads over all leads", () => {
+    const rows = [
+      { status: "converted" as const, created_at: "2026-11-01T00:00:00Z", service_interest: null },
+      { status: "new" as const, created_at: "2026-11-02T00:00:00Z", service_interest: null },
+      { status: "lost" as const, created_at: "2026-11-03T00:00:00Z", service_interest: null },
+      { status: "contacted" as const, created_at: "2026-11-04T00:00:00Z", service_interest: null },
+    ];
+    expect(conversionRate(rows)).toBe(25);
+    expect(conversionRate([])).toBe(0);
+  });
+  it("groups enquiries into the last 6 months", () => {
+    const rows = [
+      { status: "new" as const, created_at: "2026-11-05T00:00:00Z", service_interest: null },
+      { status: "new" as const, created_at: "2026-06-05T00:00:00Z", service_interest: null },
+      { status: "new" as const, created_at: "2026-01-05T00:00:00Z", service_interest: null },
+    ];
+    const months = enquiriesByMonth(rows, new Date("2026-11-12T00:00:00Z"));
+    expect(months).toHaveLength(6);
+    expect(months.at(-1)?.count).toBe(1);
+    expect(months[0]?.count).toBe(1);
+    expect(months.reduce((n, m) => n + m.count, 0)).toBe(2);
+  });
+});
