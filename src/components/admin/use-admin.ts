@@ -1,5 +1,5 @@
 import { getRouteApi } from "@tanstack/react-router";
-import { canDeleteEnquiries, canManageContent, canManageTeam } from "@/lib/admin/roles";
+import { canDeleteEnquiries, canManageContent, canManageFinance, canManageProjects, canManageTeam } from "@/lib/admin/roles";
 
 const adminRoute = getRouteApi("/_authenticated/admin");
 
@@ -12,5 +12,7 @@ export function useAdmin() {
     canManageContent: canManageContent(ctx.roles),
     canManageTeam: canManageTeam(ctx.roles),
     canDeleteEnquiries: canDeleteEnquiries(ctx.roles),
+    canManageProjects: canManageProjects(ctx.roles),
+    canManageFinance: canManageFinance(ctx.roles),
   };
 }
