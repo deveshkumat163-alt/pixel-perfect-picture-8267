@@ -130,6 +130,8 @@ export function ResourcePage({
   canDelete,
   filter,
   extraDetail,
+  rowCanEdit,
+  rowCanDelete,
   invalidate = [],
 }: {
   table: string;
@@ -148,6 +150,8 @@ export function ResourcePage({
   canDelete: boolean;
   filter?: { label: string; key: string; options: Option[] };
   extraDetail?: (r: Row) => ReactNode;
+  rowCanEdit?: (r: Row) => boolean;
+  rowCanDelete?: (r: Row) => boolean;
   invalidate?: string[][];
 }) {
   const qc = useQueryClient();
@@ -163,6 +167,8 @@ export function ResourcePage({
   const [q, setQ] = useState("");
   const [fv, setFv] = useState("all");
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
+  const editable = canEdit && (!editing?.["id"] || !rowCanEdit || rowCanEdit(editing as Row));
+  const deletable = canDelete && (!editing?.["id"] || !rowCanDelete || rowCanDelete(editing as Row));
 
   const rows = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -182,7 +188,7 @@ export function ResourcePage({
       const miss = missingRequired(fields, v);
       if (miss) throw new Error(`${miss.label} is required`);
       const payload = normalize(fields, v);
-      const res = v["id"] ? await db.from(table).update(payload).eq("id", v["id"]) : await db.from(table).insert(payload);
+      const res = v["id"] ? await db.from(table).update(payload).eq("id", v["id"]).select("id").single() : await db.from(table).insert(payload).select("id").single();
       if (res.error) throw res.error;
     },
     onSuccess: (_d, v) => {
@@ -194,7 +200,7 @@ export function ResourcePage({
   });
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await db.from(table).delete().eq("id", id);
+      const { error } = await db.from(table).delete().eq("id", id).select("id").single();
       if (error) throw error;
     },
     onSuccess: () => {
@@ -259,20 +265,20 @@ export function ResourcePage({
             <>
               <SheetHeader className="px-0">
                 <SheetTitle className="font-display text-2xl">{editing["id"] ? `Edit ${singular.toLowerCase()}` : `New ${singular.toLowerCase()}`}</SheetTitle>
-                <SheetDescription>{canEdit ? "Changes are saved to the database and logged." : "You can view this record but not change it."}</SheetDescription>
+                <SheetDescription>{editable ? "Record details" : "Read-only record"}</SheetDescription>
               </SheetHeader>
-              <fieldset disabled={!canEdit} className="py-4">
+              <fieldset disabled={!editable} className="py-4">
                 <FormFields fields={fields} value={editing} onChange={setEditing} />
               </fieldset>
               {editing["id"] && extraDetail ? <div className="pb-4">{extraDetail(editing as Row)}</div> : null}
               <div className="flex flex-wrap items-center gap-2 border-t border-border py-4">
-                {canEdit && (
+                 {editable && (
                   <Button variant="hero" size="sm" className="h-10 px-5" disabled={save.isPending} onClick={() => save.mutate(editing)}>
                     {save.isPending && <Loader2 className="animate-spin" />} Save
                   </Button>
                 )}
                 <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>Cancel</Button>
-                {canDelete && editing["id"] ? (
+                {deletable && editing["id"] ? (
                   <div className="ml-auto">
                     <ConfirmDelete title={`Delete this ${singular.toLowerCase()}?`} description="This cannot be undone." onConfirm={() => remove.mutate(str(editing["id"]))} />
                   </div>

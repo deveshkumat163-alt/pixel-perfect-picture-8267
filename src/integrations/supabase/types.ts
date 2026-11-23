@@ -826,6 +826,7 @@ export type Database = {
       invoice_total: { Args: { _invoice_id: string }; Returns: number }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      save_invoice: { Args: { _invoice: Json; _items: Json }; Returns: string }
     }
     Enums: {
       app_role:

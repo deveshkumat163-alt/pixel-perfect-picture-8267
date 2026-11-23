@@ -43,6 +43,13 @@
       "when": 1794537143714,
       "tag": "0005_crm_projects_tasks_finance",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795412032535,
+      "tag": "0006_atomic_invoice_save_and_audit",
+      "breakpoints": true
     }
   ]
 }

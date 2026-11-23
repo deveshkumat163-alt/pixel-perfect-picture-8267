@@ -136,7 +136,11 @@ export function ListEditor({
     const j = i + dir;
     if (j < 0 || j >= value.length) return;
     const next = [...value];
-    [next[i], next[j]] = [next[j]!, next[i]!];
+    const current = next[i];
+    const target = next[j];
+    if (!current || !target) return;
+    next[i] = target;
+    next[j] = current;
     onChange(next);
   }
   return (
