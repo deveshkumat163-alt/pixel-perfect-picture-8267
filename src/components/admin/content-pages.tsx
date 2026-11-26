@@ -34,7 +34,7 @@ function ContentForm({ table, recordKey, initial }: { table: "website_content" |
   const save = useMutation({ mutationFn: async () => {
     const { error } = await supabase.from(table).upsert({ key: recordKey, value }).select("key").single();
     if (error) throw error;
-  }, onSuccess: () => { toast.success("Changes saved"); qc.invalidateQueries({ queryKey: ["admin", table] }); qc.invalidateQueries({ queryKey: ["site"] }); }, onError: e => toast.error(e.message) });
+  }, onSuccess: () => { toast.success("Changes saved"); qc.invalidateQueries({ queryKey: ["admin", table] }); qc.invalidateQueries({ queryKey: ["site-content"] }); }, onError: e => toast.error(e.message) });
   return <section className="border-b border-border py-6"><h2 className="mb-5 font-display text-xl">{label(recordKey)}</h2><fieldset disabled={!canManageContent || save.isPending}><ValueEditor name={recordKey} value={value} change={setValue} /></fieldset>{canManageContent && <Button className="mt-5" size="sm" onClick={() => save.mutate()} disabled={save.isPending}><Save /> Save {label(recordKey)}</Button>}</section>;
 }
 export function SiteContentPage() {

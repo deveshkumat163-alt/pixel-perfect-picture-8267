@@ -36,3 +36,4 @@ use the editor.
 - Staff permissions use `user_roles` + `has_role`/`is_staff`/`is_admin` SQL functions. Why: roles must never live on profiles or client storage.
 - New enquiries create a notification + activity log via DB trigger. Why: admin is notified regardless of which code path inserts.
 - Dark-first design; `.surface-light` re-themes a section to the light palette. All colors are tokens in `src/styles.css`.
+- Admin totals use paginated reads and shared finance calculations, grouped by currency; only confirmed payments count as received revenue. Why: avoids API-limit truncation and misleading financial figures.

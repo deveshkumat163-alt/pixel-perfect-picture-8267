@@ -3,8 +3,9 @@ import { Images } from "lucide-react";
 import { ResourcePage, YesNo, str, type FieldDef } from "@/components/admin/crud";
 import { useAdmin } from "@/components/admin/use-admin";
 import { PORTFOLIO_CATEGORIES } from "@/lib/content-types";
+import { adminHead } from "@/lib/admin/head";
 
-export const Route = createFileRoute("/_authenticated/admin/portfolio")({ component: PortfolioAdmin });
+export const Route = createFileRoute("/_authenticated/admin/portfolio")({ head: () => adminHead("Portfolio"), component: PortfolioAdmin });
 
 const cats = PORTFOLIO_CATEGORIES.map((c) => ({ value: c, label: c }));
 const fields: FieldDef[] = [

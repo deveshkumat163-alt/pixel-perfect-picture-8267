@@ -182,7 +182,7 @@
   }
   h1, h2, h3, h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.025em;
+    letter-spacing: 0;
   }
   ::selection {
     background: color-mix(in oklab, var(--primary) 45%, transparent);
@@ -289,4 +289,33 @@
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Print only the open invoice or confirmed receipt, not the admin workspace. */
+@media print {
+  body:has(.print-document) {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.2 0 0);
+    --muted-foreground: oklch(0.4 0 0);
+    --border: oklch(0.8 0 0);
+    background: var(--background);
+    color: var(--foreground);
+  }
+  body:has(.print-document) > *:not(:has(.print-document)) { display: none !important; }
+  body:has(.print-document) [role="dialog"] {
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  [role="dialog"]:has(.print-document) > *:not(.print-document):not(:has(.print-document)) { display: none !important; }
+  [role="dialog"]:has(.print-document) > *:has(.print-document) > *:not(.print-document) { display: none !important; }
+  .print-document { margin: 0 !important; border: 0 !important; }
+  .print-document .no-print { display: none !important; }
+  .print-document tr { break-inside: avoid; }
 }

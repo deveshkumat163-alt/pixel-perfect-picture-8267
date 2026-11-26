@@ -3,8 +3,9 @@ import { Layers } from "lucide-react";
 import { ResourcePage, YesNo, str, type FieldDef } from "@/components/admin/crud";
 import { useAdmin } from "@/components/admin/use-admin";
 import { PORTFOLIO_CATEGORIES } from "@/lib/content-types";
+import { adminHead } from "@/lib/admin/head";
 
-export const Route = createFileRoute("/_authenticated/admin/services")({ component: ServicesAdmin });
+export const Route = createFileRoute("/_authenticated/admin/services")({ head: () => adminHead("Services"), component: ServicesAdmin });
 
 const fields: FieldDef[] = [
   { name: "title", label: "Title", type: "text", required: true },

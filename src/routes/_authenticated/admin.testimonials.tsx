@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { MessageSquareQuote, Star } from "lucide-react";
 import { ResourcePage, YesNo, str, type FieldDef } from "@/components/admin/crud";
 import { useAdmin } from "@/components/admin/use-admin";
+import { adminHead } from "@/lib/admin/head";
 
-export const Route = createFileRoute("/_authenticated/admin/testimonials")({ component: TestimonialsAdmin });
+export const Route = createFileRoute("/_authenticated/admin/testimonials")({ head: () => adminHead("Testimonials"), component: TestimonialsAdmin });
 
 const fields: FieldDef[] = [
   { name: "author_name", label: "Name", type: "text", required: true },

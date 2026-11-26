@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { HelpCircle } from "lucide-react";
 import { ResourcePage, YesNo, str, useOptions, type FieldDef } from "@/components/admin/crud";
 import { useAdmin } from "@/components/admin/use-admin";
+import { adminHead } from "@/lib/admin/head";
 
-export const Route = createFileRoute("/_authenticated/admin/faqs")({ component: FaqsAdmin });
+export const Route = createFileRoute("/_authenticated/admin/faqs")({ head: () => adminHead("FAQs"), component: FaqsAdmin });
 
 function FaqsAdmin() {
   const { canManageContent } = useAdmin();

@@ -15,6 +15,13 @@ import {
   Sparkles,
   UserRound,
   Users,
+  CheckSquare,
+  Layers,
+  Images,
+  FileImage,
+  Wallet,
+  Settings,
+  History,
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,8 +41,8 @@ import { cn } from "@/lib/utils";
 import { NotificationsBell } from "./notifications-bell";
 import { useAdmin } from "./use-admin";
 
-type AdminPath = "/admin" | "/admin/enquiries";
-type NavItem = { to: AdminPath; label: string; icon: LucideIcon; exact?: boolean; contentOnly?: boolean };
+type AdminPath = "/admin" | "/admin/enquiries" | "/admin/clients" | "/admin/projects" | "/admin/tasks" | "/admin/content" | "/admin/services" | "/admin/portfolio" | "/admin/testimonials" | "/admin/faqs" | "/admin/media" | "/admin/invoices" | "/admin/payments" | "/admin/settings" | "/admin/team" | "/admin/profile" | "/admin/activity";
+type NavItem = { to: AdminPath; label: string; icon: LucideIcon; exact?: boolean; contentOnly?: boolean; financeOnly?: boolean; teamOnly?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
 
 const NAV: NavGroup[] = [
@@ -46,14 +53,37 @@ const NAV: NavGroup[] = [
       { to: "/admin/enquiries", label: "Enquiries", icon: Inbox },
     ],
   },
+  { label: "Workspace", items: [
+    { to: "/admin/clients", label: "Clients", icon: Users },
+    { to: "/admin/projects", label: "Projects", icon: BriefcaseBusiness },
+    { to: "/admin/tasks", label: "Tasks", icon: CheckSquare },
+  ] },
+  { label: "Website", items: [
+    { to: "/admin/content", label: "Website content", icon: FileText, contentOnly: true },
+    { to: "/admin/services", label: "Services", icon: Layers, contentOnly: true },
+    { to: "/admin/portfolio", label: "Portfolio", icon: Images, contentOnly: true },
+    { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote, contentOnly: true },
+    { to: "/admin/faqs", label: "FAQs", icon: HelpCircle, contentOnly: true },
+    { to: "/admin/media", label: "Media library", icon: FileImage, contentOnly: true },
+  ] },
+  { label: "Finance", items: [
+    { to: "/admin/invoices", label: "Invoices", icon: FileText, financeOnly: true },
+    { to: "/admin/payments", label: "Payments & receipts", icon: Wallet, financeOnly: true },
+    { to: "/admin/settings", label: "Settings", icon: Settings, financeOnly: true },
+  ] },
+  { label: "Account", items: [
+    { to: "/admin/team", label: "Team & roles", icon: Users, teamOnly: true },
+    { to: "/admin/activity", label: "Activity log", icon: History, contentOnly: true },
+    { to: "/admin/profile", label: "My profile", icon: UserRound },
+  ] },
 ];
 
 function NavList({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
-  const { canManageContent } = useAdmin();
+  const { canManageContent, canManageFinance, canManageTeam } = useAdmin();
   return (
     <nav className="flex flex-col gap-6" aria-label="Admin">
       {NAV.map((group) => {
-        const items = group.items.filter((i) => !i.contentOnly || canManageContent);
+        const items = group.items.filter((i) => (!i.contentOnly || canManageContent) && (!i.financeOnly || canManageFinance) && (!i.teamOnly || canManageTeam));
         if (!items.length) return null;
         return (
           <div key={group.label}>
@@ -157,7 +187,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <NotificationsBell />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2.5 rounded-full py-1 pr-3 pl-1 hover:bg-accent" aria-label="Account menu">
+              <Button variant="ghost" className="h-auto gap-2.5 rounded-full py-1 pr-3 pl-1" aria-label="Account menu">
                 <span className="grid size-8 place-items-center overflow-hidden rounded-full bg-gradient-brand text-xs font-semibold text-primary-foreground">
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -169,11 +199,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   <span className="block max-w-40 truncate font-medium">{name}</span>
                   <span className="text-xs text-muted-foreground">{roles.map((r) => ROLE_LABELS[r]).join(", ")}</span>
                 </span>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel className="truncate font-normal text-muted-foreground">{user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link to="/admin/profile"><UserRound /> My profile</Link></DropdownMenuItem>
               <DropdownMenuItem onClick={signOut}>
                 <LogOut /> Sign out
               </DropdownMenuItem>

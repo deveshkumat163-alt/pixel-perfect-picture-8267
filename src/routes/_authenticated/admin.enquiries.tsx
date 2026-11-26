@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
@@ -20,8 +20,11 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LEAD_STATUS_LABELS, LEAD_STATUSES, type LeadStatus } from "@/lib/admin/roles";
 import { cn } from "@/lib/utils";
+import { adminHead } from "@/lib/admin/head";
+import { fetchAllPages } from "@/lib/admin/data";
 
 export const Route = createFileRoute("/_authenticated/admin/enquiries")({
+  head: () => adminHead("Enquiries"),
   component: EnquiriesPage,
 });
 
@@ -56,9 +59,7 @@ function EnquiriesPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin", "enquiries"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("enquiries").select("*").order("created_at", { ascending: false }).limit(1000);
-      if (error) throw error;
-      return data;
+      return fetchAllPages<Enquiry>((from, to) => supabase.from("enquiries").select("*").order("created_at", { ascending: false }).order("id").range(from, to));
     },
   });
 
@@ -166,7 +167,22 @@ function EnquiriesPage() {
 
 function EnquiryDetail({ enquiry: e, onClose }: { enquiry: Enquiry; onClose: () => void }) {
   const qc = useQueryClient();
-  const { canDeleteEnquiries } = useAdmin();
+  const { canDeleteEnquiries, canManageProjects } = useAdmin();
+  const navigate = useNavigate();
+  const convert = useMutation({
+    mutationFn: async (createProject: boolean) => {
+      const result = await supabase.rpc("convert_enquiry", { _enquiry_id: e.id, _create_project: createProject });
+      if (result.error) throw result.error;
+      return createProject;
+    },
+    onSuccess: (createProject) => {
+      toast.success(createProject ? "Client and project created" : "Client created");
+      for (const key of ["enquiries", "clients", "projects", "dashboard"]) qc.invalidateQueries({ queryKey: ["admin", key] });
+      onClose();
+      navigate({ to: createProject ? "/admin/projects" : "/admin/clients" });
+    },
+    onError: (err) => toast.error(err.message),
+  });
   const [status, setStatus] = useState<LeadStatus>(e.status);
   const [followUp, setFollowUp] = useState(e.follow_up_date ?? "");
   const [notes, setNotes] = useState(e.internal_notes ?? "");
@@ -217,6 +233,7 @@ function EnquiryDetail({ enquiry: e, onClose }: { enquiry: Enquiry; onClose: () 
           {e.service_interest && <p className="flex items-center gap-2"><CalendarClock className="size-4" /> {e.service_interest}</p>}
         </div>
         <div className="rounded-2xl bg-surface p-4 text-sm leading-relaxed whitespace-pre-wrap">{e.message}</div>
+        {canManageProjects && (e.status === "converted" ? <Button asChild variant="outline" size="sm"><Link to="/admin/clients">View clients</Link></Button> : <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" disabled={convert.isPending} onClick={() => convert.mutate(false)}>Convert to client</Button><Button variant="outline" size="sm" disabled={convert.isPending} onClick={() => convert.mutate(true)}>Convert to client & project</Button></div>)}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">

@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { slugify } from "@/lib/admin/slug";
 import { cn } from "@/lib/utils";
+import { fetchAllPages } from "@/lib/admin/data";
 
 export type Row = Record<string, unknown> & { id: string };
 export type Option = { value: string; label: string };
@@ -159,9 +160,7 @@ export function ResourcePage({
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await db.from(table).select(select).order(orderBy.column, { ascending: orderBy.ascending });
-      if (error) throw error;
-      return (data ?? []) as Row[];
+      return fetchAllPages<Row>((from, to) => db.from(table).select(select).order(orderBy.column, { ascending: orderBy.ascending }).order("id").range(from, to));
     },
   });
   const [q, setQ] = useState("");
@@ -180,6 +179,7 @@ export function ResourcePage({
   const refresh = () => {
     qc.invalidateQueries({ queryKey: key });
     qc.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+    qc.invalidateQueries({ predicate: q => ["site-content", "services", "service", "portfolio", "testimonials", "faqs"].includes(String(q.queryKey[0])) });
     for (const k of invalidate) qc.invalidateQueries({ queryKey: k });
   };
 
@@ -267,7 +267,7 @@ export function ResourcePage({
                 <SheetTitle className="font-display text-2xl">{editing["id"] ? `Edit ${singular.toLowerCase()}` : `New ${singular.toLowerCase()}`}</SheetTitle>
                 <SheetDescription>{editable ? "Record details" : "Read-only record"}</SheetDescription>
               </SheetHeader>
-              <fieldset disabled={!editable} className="py-4">
+              <fieldset disabled={!editable || save.isPending} className="py-4">
                 <FormFields fields={fields} value={editing} onChange={setEditing} />
               </fieldset>
               {editing["id"] && extraDetail ? <div className="pb-4">{extraDetail(editing as Row)}</div> : null}

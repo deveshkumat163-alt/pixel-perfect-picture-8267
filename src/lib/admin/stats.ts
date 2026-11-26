@@ -1,4 +1,5 @@
 import type { LeadStatus } from "./roles";
+import { balanceDue, invoiceTotals, paidAmount, type LineItem, type PaymentLite } from "./finance";
 
 export type EnquiryLite = { status: LeadStatus; created_at: string; service_interest: string | null };
 
@@ -29,4 +30,17 @@ export function enquiriesByMonth(rows: EnquiryLite[], now: Date, months = 6) {
 export function conversionRate(rows: EnquiryLite[]) {
   if (!rows.length) return 0;
   return Math.round((rows.filter((r) => r.status === "converted").length / rows.length) * 100);
+}
+
+type FinanceInvoice = { currency: string; status: string; discount: number; tax_rate: number; invoice_items: LineItem[]; payments: PaymentLite[] };
+/** Keep currencies separate and count only confirmed receipts as revenue. */
+export function financeSummary(invoices: FinanceInvoice[]) {
+  const currencies = new Map<string, { currency: string; received: number; outstanding: number }>();
+  for (const invoice of invoices) {
+    const bucket = currencies.get(invoice.currency) ?? { currency: invoice.currency, received: 0, outstanding: 0 };
+    bucket.received += paidAmount(invoice.payments);
+    if (invoice.status === "sent") bucket.outstanding += balanceDue(invoiceTotals(invoice.invoice_items, invoice.discount, invoice.tax_rate).total, invoice.payments);
+    currencies.set(invoice.currency, bucket);
+  }
+  return [...currencies.values()].map(b => ({ ...b, received: Math.round(b.received * 100) / 100, outstanding: Math.round(b.outstanding * 100) / 100 }));
 }

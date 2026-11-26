@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowRight, BriefcaseBusiness, Inbox, MessageSquareQuote, Percent, Sparkles, TrendingUp, type LucideIcon } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, Inbox, MessageSquareQuote, Percent, Sparkles, TrendingUp, Users, CheckSquare, Wallet, type LucideIcon } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/admin/admin-shell";
@@ -9,10 +9,15 @@ import { ErrorState, Panel } from "@/components/admin/fields";
 import { useAdmin } from "@/components/admin/use-admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { LEAD_STATUS_LABELS, LEAD_STATUSES, type LeadStatus } from "@/lib/admin/roles";
-import { conversionRate, enquiriesByMonth } from "@/lib/admin/stats";
+import { LEAD_STATUS_LABELS, LEAD_STATUSES, PROJECT_STATUS_LABELS, type LeadStatus } from "@/lib/admin/roles";
+import { conversionRate, enquiriesByMonth, financeSummary, type EnquiryLite } from "@/lib/admin/stats";
+import { fetchAllPages } from "@/lib/admin/data";
+import { formatMoney } from "@/lib/admin/finance";
+import { adminHead } from "@/lib/admin/head";
+import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
+  head: () => adminHead("Dashboard"),
   component: Dashboard,
 });
 
@@ -26,17 +31,22 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 function useDashboard() {
+  const { canManageFinance } = useAdmin();
   return useQuery({
-    queryKey: ["admin", "dashboard"],
+    queryKey: ["admin", "dashboard", canManageFinance],
     queryFn: async () => {
-      const [enq, portfolio, services, testimonials, activity] = await Promise.all([
-        supabase.from("enquiries").select("status, created_at, service_interest").order("created_at", { ascending: false }).limit(1000),
+      const [enq, portfolio, services, testimonials, activity, projects, tasks, clients, invoices] = await Promise.all([
+        fetchAllPages<EnquiryLite>((from, to) => supabase.from("enquiries").select("status, created_at, service_interest").order("id").range(from, to)),
         supabase.from("portfolio_items").select("id", { count: "exact", head: true }).eq("is_published", true),
         supabase.from("services").select("id", { count: "exact", head: true }).eq("is_published", true),
         supabase.from("testimonials").select("id", { count: "exact", head: true }).eq("is_published", true),
         supabase.from("activity_logs").select("id, actor_id, action, entity_type, details, created_at").order("created_at", { ascending: false }).limit(12),
+        fetchAllPages<Tables<"projects">>((from, to) => supabase.from("projects").select("*").order("id").range(from, to)),
+        fetchAllPages<Tables<"tasks">>((from, to) => supabase.from("tasks").select("*").order("id").range(from, to)),
+        supabase.from("clients").select("id", { count: "exact", head: true }).eq("is_active", true),
+        canManageFinance ? fetchAllPages<Tables<"invoices"> & { invoice_items: Tables<"invoice_items">[]; payments: Tables<"payments">[] }>((from, to) => supabase.from("invoices").select("*, invoice_items(*), payments(*)").order("id").range(from, to)) : Promise.resolve([]),
       ]);
-      const err = enq.error || portfolio.error || services.error || testimonials.error || activity.error;
+      const err = portfolio.error || services.error || testimonials.error || activity.error || clients.error;
       if (err) throw err;
       const actorIds = [...new Set((activity.data ?? []).map((a) => a.actor_id).filter(Boolean))] as string[];
       const names: Record<string, string> = {};
@@ -45,7 +55,11 @@ function useDashboard() {
         for (const p of data ?? []) names[p.id] = p.full_name || p.email || "Team member";
       }
       return {
-        enquiries: enq.data ?? [],
+        enquiries: enq,
+        projects,
+        tasks,
+        clients: clients.count ?? 0,
+        finance: canManageFinance ? financeSummary(invoices) : null,
         portfolio: portfolio.count ?? 0,
         services: services.count ?? 0,
         testimonials: testimonials.count ?? 0,
@@ -60,7 +74,6 @@ function useDashboard() {
 function Stat({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: string; value: string | number; hint?: string }) {
   return (
     <Panel className="relative overflow-hidden">
-      <div className="pointer-events-none absolute -top-10 -right-10 size-28 rounded-full bg-gradient-brand opacity-15 blur-2xl" aria-hidden />
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{label}</p>
         <span className="grid size-9 place-items-center rounded-xl bg-gradient-brand-soft">
@@ -94,7 +107,7 @@ function Dashboard() {
     <div className="mx-auto max-w-7xl">
       <PageHeader
         title={`Welcome${profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}`}
-        description="Live overview of leads and website content."
+        description="Leads, delivery and confirmed payments."
         action={
           <Button asChild variant="hero" size="sm" className="h-9 px-4">
             <Link to="/admin/enquiries">
@@ -128,6 +141,9 @@ function DashboardBody({ data }: { data: NonNullable<ReturnType<typeof useDashbo
   const serviceMap = new Map<string, number>();
   for (const r of rows) serviceMap.set(r.service_interest || "Not specified", (serviceMap.get(r.service_interest || "Not specified") ?? 0) + 1);
   const serviceData = [...serviceMap.entries()].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  const projectData = Object.entries(PROJECT_STATUS_LABELS).map(([status, name]) => ({ name, value: data.projects.filter(p => p.status === status).length }));
+  const today = now.toISOString().slice(0, 10);
+  const openTasks = data.tasks.filter(t => t.status !== "done");
 
   return (
     <div className="space-y-6">
@@ -137,6 +153,15 @@ function DashboardBody({ data }: { data: NonNullable<ReturnType<typeof useDashbo
         <Stat icon={Percent} label="Conversion rate" value={`${conversionRate(rows)}%`} hint="Converted ÷ all enquiries" />
         <Stat icon={BriefcaseBusiness} label="Published projects" value={data.portfolio} hint={`${data.services} services · ${data.testimonials} testimonials`} />
       </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat icon={Users} label="Active clients" value={data.clients} />
+        <Stat icon={BriefcaseBusiness} label="Active projects" value={data.projects.filter(p => !["completed", "on_hold"].includes(p.status)).length} hint={`${data.projects.filter(p => p.status === "completed").length} completed`} />
+        <Stat icon={CheckSquare} label="Open tasks" value={openTasks.length} hint={`${openTasks.filter(t => t.due_date && t.due_date < today).length} overdue`} />
+        <Stat icon={BriefcaseBusiness} label="Overdue projects" value={data.projects.filter(p => p.due_date && p.due_date < today && p.status !== "completed").length} />
+      </div>
+      {data.finance && <section className="border-y border-border py-6"><h2 className="mb-4 flex items-center gap-2 font-medium"><Wallet className="size-4" /> Finance</h2>{data.finance.length ? <div className="grid gap-6 sm:grid-cols-2">{data.finance.map(f => <div key={f.currency}><p className="text-xs text-muted-foreground">{f.currency}</p><p className="mt-2 text-sm">Confirmed revenue</p><p className="font-display text-2xl font-semibold">{formatMoney(f.received, f.currency)}</p><p className="mt-2 text-sm text-muted-foreground">Outstanding: {formatMoney(f.outstanding, f.currency)}</p></div>)}</div> : <p className="text-sm text-muted-foreground">No financial records yet.</p>}</section>}
+      <section className="border-b border-border pb-6"><h2 className="mb-4 font-medium">Project pipeline</h2><div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">{projectData.map(p => <div key={p.name}><p className="text-sm text-muted-foreground">{p.name}</p><p className="font-mono text-xl">{p.value}</p></div>)}</div></section>
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Panel className="xl:col-span-2">
@@ -239,12 +264,6 @@ function DashboardBody({ data }: { data: NonNullable<ReturnType<typeof useDashbo
         </Panel>
       </div>
 
-      <Panel className="bg-gradient-brand-soft">
-        <p className="font-medium">Coming in the next phase</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Clients, projects, invoices, payments and tasks — with revenue and project figures added to this dashboard once those records exist.
-        </p>
-      </Panel>
     </div>
   );
 }
